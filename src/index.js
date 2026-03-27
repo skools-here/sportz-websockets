@@ -2,11 +2,16 @@ import { matches } from "./db/schema.js";
 import express from "express" 
 import { matchRouter } from "./routes/matches.js";
 import { db } from "./db/db.js";
+import http from 'http';
+import { attachWebSocketServer } from "./ws/server.js"; 
 
 const app = express();
 const port = 8080;
+const HOST='0.0.0.0';
 
 app.use(express.json());
+
+const server=http.createServer(app);
 
 app.get("/", (req, res) => {
   res.send("Hello from Express Server!");
@@ -14,6 +19,9 @@ app.get("/", (req, res) => {
 
 app.use('/',matchRouter)
 
+const {broadcastMatchCreated}=attachWebSocketServer(server);
+
+app.locals.broadcastMatchCreated=broadcastMatchCreated;
 // ✅ CREATE MATCH API
 app.post("/matches", async (req, res) => {
   try {
@@ -22,6 +30,8 @@ app.post("/matches", async (req, res) => {
     const [match] = await db.insert(matches)
       .values({ sport, homeTeam, awayTeam })
       .returning();
+      
+      req.app.locals.broadcastMatchCreated(match);
 
     res.json(match);
   } catch (err) {
@@ -43,6 +53,9 @@ app.get("/matches", async (req, res) => {
 
 
 // 🚀 START SERVER
-app.listen(port, () => {
+// 🚀 START SERVER
+server.listen(port, HOST, () => {
+  const baseUrl = 'http://localhost:8080';
   console.log(`Server running at http://localhost:${port}`);
+  console.log(`WSS running on ${baseUrl.replace('http','ws')}/ws`);
 });
