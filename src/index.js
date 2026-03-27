@@ -1,6 +1,7 @@
-import express from "express";
-import { db } from "./db/db.js";
 import { matches } from "./db/schema.js";
+import express from "express" 
+import { matchRouter } from "./routes/matches.js";
+import { db } from "./db/db.js";
 
 const app = express();
 const port = 8080;
@@ -11,6 +12,7 @@ app.get("/", (req, res) => {
   res.send("Hello from Express Server!");
 });
 
+app.use('/',matchRouter)
 
 // ✅ CREATE MATCH API
 app.post("/matches", async (req, res) => {
