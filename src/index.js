@@ -1,11 +1,7 @@
-<<<<<<< Updated upstream
-import express from "express";
-import { db } from "./db/db.js";
 import { matches } from "./db/schema.js";
-=======
 import express from "express" 
-import { matchRouter } from "./routes/matches";
->>>>>>> Stashed changes
+import { matchRouter } from "./routes/matches.js";
+import { db } from "./db/db.js";
 
 const app = express();
 const port = 8080;
