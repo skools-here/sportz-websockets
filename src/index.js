@@ -1,61 +1,33 @@
-import { matches } from "./db/schema.js";
-import express from "express" 
-import { matchRouter } from "./routes/matches.js";
-import { db } from "./db/db.js";
+
+import express from 'express';
 import http from 'http';
-import { attachWebSocketServer } from "./ws/server.js"; 
+import {matchRouter} from "./routes/matches.js";
+import {attachWebSocketServer} from "./ws/server.js";
+import {commentaryRouter} from "./routes/commentary.js";
+
+const PORT = 8080;
+const HOST = '0.0.0.0';
 
 const app = express();
-const port = 8080;
-const HOST='0.0.0.0';
+const server = http.createServer(app);
 
 app.use(express.json());
 
-const server=http.createServer(app);
-
-app.get("/", (req, res) => {
-  res.send("Hello from Express Server!");
+app.get('/', (req, res) => {
+  res.send('Hello from Express server!');
 });
 
-app.use('/',matchRouter)
+// app.use(securityMiddleware());
 
-const {broadcastMatchCreated}=attachWebSocketServer(server);
+app.use('/matches', matchRouter);
+app.use('/matches/:id/commentary', commentaryRouter);
 
-app.locals.broadcastMatchCreated=broadcastMatchCreated;
-// ✅ CREATE MATCH API
-app.post("/matches", async (req, res) => {
-  try {
-    const { sport, homeTeam, awayTeam } = req.body;
+const { broadcastMatchCreated, broadcastCommentary } = attachWebSocketServer(server);
+app.locals.broadcastMatchCreated = broadcastMatchCreated;
+app.locals.broadcastCommentary = broadcastCommentary;
 
-    const [match] = await db.insert(matches)
-      .values({ sport, homeTeam, awayTeam })
-      .returning();
-      
-      req.app.locals.broadcastMatchCreated(match);
-
-    res.json(match);
-  } catch (err) {
-    console.error("🔥 FULL ERROR:", err);   // 👈 IMPORTANT
-    res.status(500).json({ error: err.message }); // 👈 show actual error
-  }
-});
-
-// ✅ GET ALL MATCHES
-app.get("/matches", async (req, res) => {
-  try {
-    const data = await db.select().from(matches);
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch matches" });
-  }
-});
-
-
-// 🚀 START SERVER
-// 🚀 START SERVER
-server.listen(port, HOST, () => {
-  const baseUrl = 'http://localhost:8080';
-  console.log(`Server running at http://localhost:${port}`);
-  console.log(`WSS running on ${baseUrl.replace('http','ws')}/ws`);
+server.listen(PORT, HOST, () => {
+    const baseUrl = 'http://localhost:8080';
+    console.log(`Server is running on ${baseUrl}`);
+    console.log(`WebSocket Server is running on ${baseUrl.replace('http', 'ws')}/ws`);
 });
